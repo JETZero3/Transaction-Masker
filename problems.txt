@@ -1,0 +1,8 @@
+Problems:
+1. String formatting is non-constant
+2. Variable names are non-constant
+3. Strings might be incorrectly formed
+4. Parsing by looking for specific phrases might catch unwanted data
+5. Must be in same format as input string
+6. Must be modular to changes (cannot hardcode just for CVV, CardNumber, and expiry date)
+7. Could be more formats

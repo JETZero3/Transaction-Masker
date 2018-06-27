@@ -5,31 +5,19 @@
 $separator;
 $regex;
 $delimiter;
-$input = 
-"<?xml version='1.0' encoding='UTF-8'?>
-<Request>
-	<NewOrder>
-		<IndustryType>MO</IndustryType>
-		<MessageType>AC</MessageType>
-		<BIN>000001</BIN>
-		<MerchantID>209238</MerchantID>
-		<TerminalID>001</TerminalID>
-		<CardBrand>VI</CardBrand>
-		<CardDataNumber>5454545454545454</AccountNum>
-		<Exp>1026</Exp>
-		<CVVCVCSecurity>300</Exp>
-		<CurrencyCode>124</CurrencyCode>
-		<CurrencyExponent>2</CurrencyExponent>
-		<AVSzip>A2B3C3</AVSzip>
-		<AVSaddress1>2010 Road SW</AVSaddress1>
-		<AVScity>Calgary</AVScity>
-		<AVSstate>AB</AVSstate>
-		<AVSname>JOHN R SMITH</AVSname>
-		<OrderID>23123INV09123</OrderID>
-		<Amount>127790</Amount>
-	</NewOrder>
-</Request>
-";
+$filename = $argv[1];
+
+// Function to take in a string from a given file
+function input($argument){
+	if ($argument == NULL){
+		echo "No text file given as argument";
+		exit();
+	}
+	$file = fopen($argument, "r") or die("Can't open the file to read.");
+	$input = fread($file, filesize($argument));
+	fclose($file);
+	return $input;
+}
 
 // Simple function to obtain the data format of the string
 function parseFormat($input){
@@ -42,7 +30,7 @@ function parseFormat($input){
     elseif (strpos($input, ":") !== FALSE){
         return "JSON";
     }
-    elseif (strpos($input, "<") !== FALSE){
+    elseif (strpos($input, "xml") !== FALSE){
         return "XML";
     }
 	else{
@@ -66,8 +54,8 @@ function setRegex($format, &$regex, &$separator, &$delimiter){
 	}
 	elseif ($format == "JSON"){
 		$separator = ": ";
-		$regex = '/([^:\n]+)'.$separator.'([^,]+)/';
-		$delimiter = ",\n";
+		$regex = '/([^:\n]+)'.$separator.'(.*)/';
+		$delimiter = "\n";
 	}
 	elseif ($format == "XML"){
 		$separator=">";
@@ -80,7 +68,6 @@ function setRegex($format, &$regex, &$separator, &$delimiter){
 function parseString($input, $regex){
 	preg_match_all($regex, $input, $r);
 	$result = array_combine($r[1], $r[2]);
-	print_r($r);
 	return $result;
 }
 
@@ -135,6 +122,7 @@ function maskCVV(&$dictionary){
 	}
 }
 
+// All mask functions are put together into one function to keep the body cleaner
 function mask(&$dictionary){
     maskCardNumber($dictionary);
 	maskExpiryDate($dictionary);
@@ -142,18 +130,25 @@ function mask(&$dictionary){
 }
 
 // This function reconstitutes the string in the same format that was received. 
-function outsource($dictionary, $format, $regex ,$separator, $delimiter){
-	print_r($input);
-		
+// It will both output the string in command line, and output to a new file
+function output($format, $dictionary ,$separator, $delimiter, $argument){
+	// My regex misses the curly brackets in the JSON string, so they have to be added manually
+	if ($format == "JSON")
+		$output = $output."{\n";
+	foreach ($dictionary as $key => $value){
+		$output = $output.$key.$separator.$value.$delimiter;
+	}
+	if ($format == "JSON")
+		$output = $output."}";
+	print_r($output);
+	$file = fopen("masked".$argument, "w") or die("Can't open the file to write.");
+	fwrite($file, $output);
+	fclose($file);
 }
 
-function output($input){
-	print_r($input);
-}
-
+$input = input($filename);
 $format = parseFormat($input);
-echo "$format\n";
 setRegex($format, $regex, $separator, $delimiter);
 $dictionary = parseString($input, $regex);
 mask($dictionary);
-print_r($dictionary);
+output($format, $dictionary, $separator, $delimiter, $filename);
