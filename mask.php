@@ -6,22 +6,30 @@ $separator;
 $regex;
 $delimiter;
 $input = 
-"{
-    \"MsgTypId\": 111231232300,
-    \"CardNumber\": \"4242424242424242\",
-    \"CardExp\": 1024,
-    \"CardCVV\": 240,
-    \"TransProcCd\": \"004800\",
-    \"TransAmt\": \"57608\",
-    \"MerSysTraceAudNbr\": \"456211\",
-    \"TransTs\": \"180603162242\",
-    \"AcqInstCtryCd\": \"840\",
-    \"FuncCd\": \"100\",
-    \"MsgRsnCd\": \"1900\",
-    \"MerCtgyCd\": \"5013\",
-    \"AprvCdLgth\": \"6\",
-    \"RtrvRefNbr\": \"1029301923091239\",
-}";
+"<?xml version='1.0' encoding='UTF-8'?>
+<Request>
+	<NewOrder>
+		<IndustryType>MO</IndustryType>
+		<MessageType>AC</MessageType>
+		<BIN>000001</BIN>
+		<MerchantID>209238</MerchantID>
+		<TerminalID>001</TerminalID>
+		<CardBrand>VI</CardBrand>
+		<CardDataNumber>5454545454545454</AccountNum>
+		<Exp>1026</Exp>
+		<CVVCVCSecurity>300</Exp>
+		<CurrencyCode>124</CurrencyCode>
+		<CurrencyExponent>2</CurrencyExponent>
+		<AVSzip>A2B3C3</AVSzip>
+		<AVSaddress1>2010 Road SW</AVSaddress1>
+		<AVScity>Calgary</AVScity>
+		<AVSstate>AB</AVSstate>
+		<AVSname>JOHN R SMITH</AVSname>
+		<OrderID>23123INV09123</OrderID>
+		<Amount>127790</Amount>
+	</NewOrder>
+</Request>
+";
 
 // Simple function to obtain the data format of the string
 function parseFormat($input){
@@ -34,7 +42,7 @@ function parseFormat($input){
     elseif (strpos($input, ":") !== FALSE){
         return "JSON";
     }
-    elseif (strpos($input, "xml") !== FALSE){
+    elseif (strpos($input, "<") !== FALSE){
         return "XML";
     }
 	else{
@@ -43,7 +51,8 @@ function parseFormat($input){
 	}
 }
 
-// Set the regex based on the format (as well as the separator and delimiter
+// Set the regex based on the format (as well as the separator and delimiter). 
+// Keeping whitespace is important for reconstituting the string later. 
 function setRegex($format, &$regex, &$separator, &$delimiter){
 	if ($format == "array"){
 		$separator = " => ";
@@ -61,7 +70,9 @@ function setRegex($format, &$regex, &$separator, &$delimiter){
 		$delimiter = ",\n";
 	}
 	elseif ($format == "XML"){
-		
+		$separator=">";
+		$regex = '/([^>\n]+)'.$separator.'(.*)/';
+		$delimiter = "\n";
 	}
 }
 
@@ -73,7 +84,14 @@ function parseString($input, $regex){
 	return $result;
 }
 
-function maskCardName(&$dictionary){
+/*
+Functions to mask sensitive data fields
+There are two unique properties to the card number to help it get masked:
+	1. Each string, there's the phrase "card" and "number" in the key
+	2. The number of the digits in the value must be between 12 and 19 (from researching card numbers)
+To ensure finding the proper number of digits, all non-digits are temporarily removed while digits are masked
+*/
+function maskCardNumber(&$dictionary){
 	foreach ($dictionary as $key => &$value){
 		if (stripos($key, "card") !== FALSE && stripos($key, "number") !== FALSE){
 			$tempValue = preg_replace("/[^0-9]/", "", $value );
@@ -84,6 +102,12 @@ function maskCardName(&$dictionary){
 	}
 }
 
+/*
+The unique identifiers for the expiry date are:
+	1. The length of the value is 4 digits (usually mm/yy, but not entirely sure)
+	2. The phrase "exp" appears in the key.
+		The phrase "exp" appears in the 4th sample string, so condition 2 is not good enough to mask without condition 1. 
+*/
 function maskExpiryDate(&$dictionary){
 	foreach ($dictionary as $key => &$value){
 		if (stripos($key, "exp") !== FALSE){
@@ -95,6 +119,11 @@ function maskExpiryDate(&$dictionary){
 	}
 }
 
+/*
+The unique identifiers for CVV are: 
+	1. The phrase "CVV" appears in the key
+	2. The value is of length 3. 
+*/
 function maskCVV(&$dictionary){
 	foreach ($dictionary as $key => &$value){
 		if (stripos($key, "cvv") !== FALSE){
@@ -107,11 +136,12 @@ function maskCVV(&$dictionary){
 }
 
 function mask(&$dictionary){
-    maskCardName($dictionary);
+    maskCardNumber($dictionary);
 	maskExpiryDate($dictionary);
 	maskCVV($dictionary);
 }
 
+// This function reconstitutes the string in the same format that was received. 
 function outsource($dictionary, $format, $regex ,$separator, $delimiter){
 	print_r($input);
 		
