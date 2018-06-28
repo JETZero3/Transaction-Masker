@@ -1,0 +1,16 @@
+{
+    "MsgTypId": 111231232300,
+    "CardNumber": "****************",
+    "CardExp": ****,
+    "CardCVV": ***,
+    "TransProcCd": "004800",
+    "TransAmt": "57608",
+    "MerSysTraceAudNbr": "456211",
+    "TransTs": "180603162242",
+    "AcqInstCtryCd": "840",
+    "FuncCd": "100",
+    "MsgRsnCd": "1900",
+    "MerCtgyCd": "5013",
+    "AprvCdLgth": "6",
+    "RtrvRefNbr": "1029301923091239",
+}
