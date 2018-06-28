@@ -26,6 +26,9 @@ function parseFormat($input){
     elseif (strpos($input, "xml") !== FALSE){
         return "XML";
     }
+	elseif (strpos($input, "/") !== FALSE && strpos($input, "=") !== FALSE){
+		return "Jan";
+	}
 	else{
 		echo "Unrecognized format. Exiting.";
 		exit();
@@ -54,6 +57,11 @@ function setRegex($format, &$regex, &$separator, &$delimiter){
 		$separator=">";
 		$regex = '/([^>\n]+)'.$separator.'(.*)/';
 		$delimiter = "\n";
+	}
+	elseif ($format == "Jan"){
+		$separator = "=";
+		$regex = '/([^=\/]+)'.$separator.'([^=\/]+)/';
+		$delimiter = "/";
 	}
 }
 

@@ -2,6 +2,7 @@
 
 <?php
 require "functions.php";
+
 function maskSensitiveData($input){
 	// Defining variables
 	$separator;
@@ -14,6 +15,7 @@ function maskSensitiveData($input){
 	mask($dictionary);
 	return returnString($format, $dictionary ,$separator, $delimiter, $argument);
 }
+
 $filename = $argv[1];
 $inputString = input($filename);
 $outputString = maskSensitiveData($inputString);
